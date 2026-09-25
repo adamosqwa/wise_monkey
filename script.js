@@ -181,3 +181,36 @@ async function thoughtsGenerator(textToWrite) {
 
     monke.src = "monke.png";
 }
+
+const newsletterForm = document.getElementById("newsletter_form");
+const emailInput = document.getElementById("email");
+const confirmation = document.getElementById("confirmation");
+
+newsletterForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = emailInput.value;
+
+    try {
+        const response = await fetch("/api/subscribe", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            confirmation.textContent = data.message;
+            newsletterForm.reset();
+        } else {
+            confirmation.textContent = data.error;
+        }
+    } catch (error) {
+        confirmation.textContent = "Something went wrong. Please try again.";
+    }
+});
