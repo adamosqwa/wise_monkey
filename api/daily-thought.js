@@ -10,7 +10,6 @@ export default async function handler(req, res) {
         });
     }
 
-    // Protect the endpoint from random people calling it.
     const authHeader = req.headers.authorization;
 
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -20,131 +19,132 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Get all contacts
-        const { data, error } = await resend.contacts.list();
-
-        if (error) {
-            console.error("Contacts error:", error);
-
-            return res.status(500).json({
-                error: "Could not load subscribers"
-            });
-        }
-
-        const subscribers = data.data.filter(
-            contact => !contact.unsubscribed
-        );
-
-        if (subscribers.length === 0) {
-            return res.status(200).json({
-                message: "No active subscribers."
-            });
-        }
-
-        // Pick random thought
         const thought =
             thoughts[Math.floor(Math.random() * thoughts.length)];
 
-        // Prepare emails
-        const emails = subscribers.map(contact => ({
-            from: "Wise Monke <hello@wisemonkey.site>",
-            to: [contact.email],
-            subject: "🐒 Your Wise Thought for Today",
-            html: `
-                <div style="
-                    margin: 0;
-                    padding: 40px 20px;
-                    background: #15180d;
-                    font-family: Arial, Helvetica, sans-serif;
-                    color: #f1f1df;
-                ">
+        const { data, error } =
+            await resend.broadcasts.create({
+                segmentId: process.env.RESEND_SEGMENT_ID,
+
+                from: "Wise Monke <hello@wisemonkey.site>",
+
+                subject: "🐒 Your Wise Thought for Today",
+
+                html: `
                     <div style="
-                        max-width: 600px;
-                        margin: 0 auto;
-                        background: #242817;
-                        border: 1px solid #4b5430;
-                        border-radius: 16px;
-                        padding: 40px;
-                        text-align: center;
+                        margin:0;
+                        padding:40px 20px;
+                        background:#15180d;
+                        font-family:Arial,Helvetica,sans-serif;
+                        color:#f1f1df;
                     ">
-
                         <div style="
-                            font-size: 52px;
-                            margin-bottom: 20px;
+                            max-width:600px;
+                            margin:0 auto;
+                            background:#242817;
+                            border:1px solid #4b5430;
+                            border-radius:18px;
+                            padding:42px;
+                            text-align:center;
                         ">
-                            🐒
+
+                            <div style="
+                                font-size:58px;
+                                margin-bottom:20px;
+                            ">
+                                🐒
+                            </div>
+
+                            <p style="
+                                margin:0 0 16px;
+                                color:#aeb86d;
+                                font-size:13px;
+                                letter-spacing:3px;
+                                text-transform:uppercase;
+                            ">
+                                Today's Wise Thought
+                            </p>
+
+                            <h1 style="
+                                margin:0;
+                                font-size:29px;
+                                line-height:1.5;
+                                font-weight:normal;
+                                color:#e5e8c8;
+                            ">
+                                ${thought}
+                            </h1>
+
+                            <div style="
+                                width:60px;
+                                height:2px;
+                                background:#aeb86d;
+                                margin:32px auto;
+                            "></div>
+
+                            <p style="
+                                margin:0;
+                                color:#92977f;
+                                font-size:14px;
+                            ">
+                                Think about it.
+                            </p>
+
+                            <div style="
+                                margin-top:40px;
+                                padding-top:24px;
+                                border-top:1px solid #3b4128;
+                            ">
+                                <p style="
+                                    margin:0 0 12px;
+                                    color:#686c5b;
+                                    font-size:12px;
+                                ">
+                                    Wise Monke 🐒
+                                </p>
+
+                                <p style="
+                                    margin:0;
+                                    font-size:12px;
+                                ">
+                                    <a
+                                        href="{{{RESEND_UNSUBSCRIBE_URL}}}"
+                                        style="
+                                            color:#8f947d;
+                                            text-decoration:underline;
+                                        "
+                                    >
+                                        Unsubscribe
+                                    </a>
+                                </p>
+                            </div>
+
                         </div>
-
-                        <p style="
-                            margin: 0 0 10px;
-                            color: #aeb86d;
-                            font-size: 13px;
-                            text-transform: uppercase;
-                            letter-spacing: 2px;
-                        ">
-                            Today's Wise Thought
-                        </p>
-
-                        <h1 style="
-                            font-size: 28px;
-                            line-height: 1.4;
-                            color: #e5e8c8;
-                            font-weight: normal;
-                        ">
-                            ${thought}
-                        </h1>
-
-                        <div style="
-                            width: 60px;
-                            height: 2px;
-                            background: #aeb86d;
-                            margin: 30px auto;
-                        "></div>
-
-                        <p style="
-                            margin: 0;
-                            color: #8f947d;
-                            font-size: 14px;
-                        ">
-                            Think about it.
-                        </p>
-
-                        <p style="
-                            margin-top: 35px;
-                            color: #686c5b;
-                            font-size: 12px;
-                        ">
-                            Wise Monke 🐒
-                        </p>
-
                     </div>
-                </div>
-            `
-        }));
+                `,
 
-        const { data: result, error: sendError } =
-            await resend.batch.send(emails);
+                send: true
+            });
 
-        if (sendError) {
-            console.error("Batch error:", sendError);
+        if (error) {
+            console.error("Broadcast error:", error);
 
             return res.status(500).json({
-                error: "Could not send daily thoughts"
+                error: "Could not send today's Wise Thought."
             });
         }
 
         return res.status(200).json({
-            message: "Daily thoughts sent.",
-            thought: thought,
-            recipients: subscribers.length,
-            result: result
+            message: "Wise Thought sent.",
+            thought,
+            broadcastId: data.id
         });
 
     } catch (error) {
         console.error(error);
 
         return res.status(500).json({
-            error: "Something went wrong"
+            error: "Something went wrong."
         });
     }
 }

@@ -1,4 +1,4 @@
-export const THOUGHTS = [
+export const thoughts = [
   "The unexamined life is not worth living." ,
   "Whereof one cannot speak, thereof one must be silent." ,
   "I think, therefore I am." ,

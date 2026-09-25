@@ -184,6 +184,7 @@ async function thoughtsGenerator(textToWrite) {
 
 const newsletterForm = document.getElementById("newsletter_form");
 const emailInput = document.getElementById("email");
+const websiteInput = document.getElementById("website");
 const confirmation = document.getElementById("confirmation");
 
 newsletterForm.addEventListener("submit", async (event) => {
@@ -198,7 +199,8 @@ newsletterForm.addEventListener("submit", async (event) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                email: email
+                email: email,
+                website: websiteInput.value
             })
         });
 
